@@ -1,0 +1,1 @@
+Harmless fictional probe: direct push must be rejected despite passing CI.
