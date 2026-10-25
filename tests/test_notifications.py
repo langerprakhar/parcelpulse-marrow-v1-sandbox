@@ -41,6 +41,36 @@ class Acceptance(unittest.TestCase):
                 self.ledger.process(event, shipment, carrier="ups")
         self.assertEqual(0, self.ledger.count())
 
+    def test_process_batch_preserves_order_and_duplicate_results(self):
+        events = [
+            ("evt-2", "shipment-2"),
+            ("evt-1", "shipment-1"),
+            ("evt-2", "shipment-2"),
+        ]
+        results = self.ledger.process_batch(iter(events))
+        self.assertEqual(
+            [{"event_id": event, "shipment_id": shipment} for event, shipment in events],
+            results,
+        )
+        self.assertEqual(2, self.ledger.count())
+
+    def test_process_batch_empty_iterable(self):
+        self.assertEqual([], self.ledger.process_batch(iter(())))
+        self.assertEqual(0, self.ledger.count())
+
+    def test_process_batch_stops_at_conflicting_event(self):
+        with self.assertRaises(ValueError):
+            self.ledger.process_batch([
+                ("evt-1", "shipment-1"),
+                ("evt-1", "shipment-2"),
+                ("evt-2", "shipment-2"),
+            ])
+        self.assertEqual(1, self.ledger.count())
+        self.assertEqual(
+            {"event_id": "evt-1", "shipment_id": "shipment-1"},
+            self.ledger.process("evt-1", "shipment-1"),
+        )
+
     def test_concurrent_replays(self):
         def deliver(_):
             ledger = Notifications(self.path)
