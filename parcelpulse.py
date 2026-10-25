@@ -28,6 +28,9 @@ class Notifications:
                 raise ValueError("event_id was already used for another shipment")
         return {"event_id": event_id, "shipment_id": original}
 
+    def process_batch(self, events):
+        return [self.process(event_id, shipment_id) for event_id, shipment_id in events]
+
     def count(self):
         return self.db.execute("SELECT COUNT(*) FROM notifications").fetchone()[0]
 
